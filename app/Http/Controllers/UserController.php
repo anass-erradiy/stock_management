@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\EditUserRequest;
+use App\Http\Requests\LoginRequest;
+use App\Http\Requests\RegisterRequest;
 use App\Models\User;
 use Exception;
 use Illuminate\Http\Request;
@@ -11,134 +14,75 @@ use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
-    public function register(Request $request){
-        try {
-            $request->validate([
-                'userName' => 'required' ,
-                'email' => 'required|unique:users,email',
-                'role' => 'required|in:seller,buyer,admin',
-                'phoneNumber' => 'unique:users,phoneNumber' ,
-                'password' => 'required|min:8'
-                ]) ;
-            // return $request->all() ;
-            $user = User::create(
-               [
-                'userName' => $request->userName  ,
-                'email' => $request->email ,
-                'phoneNumber' => $request->phoneNumber ,
-                'password' => Hash::make($request->password),
-               ]
-            ) ;
-            if($request->role == 'seller')
-                $user->assignRole('seller') ;
-            elseif($request->role == 'buyer')
-                $user->assignRole('buyer') ;
-            else
-                $user->assignRole(['admin','seller','buyer']);
-            $token = $user->createToken('authToken')->plainTextToken;
-            return response()->json([
-                'message' => 'user registred with success !' ,
-                'token' => $token
-            ]) ;
-        } catch (Exception $exp) {
-            return response()->json([
-                'error' => $exp->getMessage()
-            ],404);
-        }
-
+    public function __construct()
+    {
+        $this->middleware('role:admin')->only('register') ;
     }
-    public function login(Request $request) {
-        try {
-            $credentials = $request->validate([
-                'email' => 'required|email|exists:users,email' ,
-                'password' => 'required|min:8'
+
+    public function register(RegisterRequest $request){
+        $request->merge(['password' => Hash::make($request->password)]) ;
+            $user = User::create(
+              $request->all()
+              ) ;
+            $user->assignRole($request->role) ;
+            return response()->json([
+                'message' => 'user created successfully with the role : '.$request->role ,
             ]) ;
-            if(Auth::attempt($credentials)){
-                $token = Auth::user()->createToken('autToken')->plainTextToken ;
+    }
+    public function login(LoginRequest $request) {
+            $credentials = $request->only(['email','password']) ;
+            if(!Auth::attempt($credentials)){
                 return response()->json([
-                    'user' => Auth::user() ,
-                    'token' => $token
+                    'error' => 'incorrect password !'
                 ]) ;
             }
+            $token = Auth::user()->createToken('autToken')->plainTextToken ;
             return response()->json([
-                'error' => 'the provided password is incorrect !'
+                'user' => Auth::user() ,
+                'token' => $token
             ]) ;
-        } catch (Exception $th) {
-            return response()->json([
-                'error' => $th->getMessage()
-            ]) ;
-        }
     }
-    public function edit(Request $request,$id){
-        try {
-            $request->validate([
-                'userName' => [
-                    'required',
-                    Rule::unique('users', 'userName')->ignore(Auth::user()->id)
-                    ],
-                'email' => [
-                    'required',
-                    'email',
-                    Rule::unique('users', 'email')->ignore(Auth::user()->id)
-
-                ],
-                'phoneNumber' => [
-                    'numeric',
-                    Rule::unique('users','phoneNUmber')->ignore(Auth::user()->id)
-                    ] ,
-                'role' => 'required|in:seller,buyer,admin'
-            ]) ;
-            $user = User::find($id) ;
-            $user->update([
-                'userName' => $request->userName ,
-                'email' => $request->email ,
-                'phoneNumber' => $request->phoneNumber ,
-            ]) ;
-            if($request->role == 'admin' && Auth::user()->hasRole('admin'))
-                $user->syncRoles(['seller', 'buyer','admin']);
+    public function update(EditUserRequest $request,User $user){
+        if($request->role == 'admin' && !Auth::user()->hasRole('admin') || Auth::user()->id != $user->id)
             return response()->json([
-                'message' => 'the user with the id : '.$id.' updated with success !'
+                'error' => 'you do not have permession to do this acction! '
             ]) ;
-        } catch (Exception $th) {
-            return response()->json([
-                'error' => $th->getMessage()
-            ]) ;
-        }
+        $user->update(
+            $request->all()
+        ) ;
+        if($request->role == 'seller' || $request->role=='buyer')
+            $user->syncRole($request->role);
+        $user->syncRoles(['seller', 'buyer','admin']) ;
+        return response()->json([
+            'message' => 'the user with the id : '.$user->id.' updated successfully !'
+        ]) ;
 
     }
-    public function delete($id){
-        try {
-            if(Auth::user()->id == $id)
-                return response()->json([
-                    'message' => "You can't delete your account !"
-                ]) ;
-            User::find($id)->delete() ;
+    public function destroy(User $user){
+        if(Auth::user()->id == $user->id)
             return response()->json([
-                'message' => 'User deleted with success !'
+                'message' => "You can't delete your account !"
             ]) ;
-        } catch (Exception $th) {
-            return response()->json([
-                'error' => $th->getMessage()
-            ]) ;
-        }
+        $user->delete() ;
+        return response()->json([
+            'message' => 'User deleted with success !'
+        ]) ;
     }
-    public function checkAuth(){
+    public function show(User $user){
+        return $user;
+
+    }
+    public function me(){
         return Auth::user() ;
     }
     public function logout(Request $request){
-        try{
-            $user = $request->user();
-            if ($user) {
-                $user->tokens()->delete();
-                return response()->json([
-                    'message' => 'User disconnected successfully!'
-                ]);
-            }
-            return response()->json(['error'=> 'You are not authorized to do this action !']) ;}
-            catch(Exception $msg){
-                return response()->json([
-                    $msg->getMessage()
-                ]);
-            }
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['error'=> 'You are not authorized to do this action !']) ;
+        }
+        $user->tokens()->delete();
+        return response()->json([
+            'message' => 'User disconnected successfully!'
+        ]);
     }
 }
