@@ -27,20 +27,17 @@ class EditUserRequest extends FormRequest
     {
         return [
             'userName' => [
-                'required',
                 Rule::unique('users', 'userName')->ignore(Auth::user()->id)
                 ],
             'email' => [
-                'required',
                 'email',
                 Rule::unique('users', 'email')->ignore(Auth::user()->id)
-
             ],
             'phoneNumber' => [
                 'numeric',
                 Rule::unique('users','phoneNUmber')->ignore(Auth::user()->id)
                 ] ,
-            'role' => 'required|in:seller,buyer,admin'
+            'role' => 'in:seller,buyer,admin'
         ];
     }
 }

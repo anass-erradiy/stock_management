@@ -12,7 +12,6 @@ class Stock extends Model
 
     protected $fillable = [
         'product_id',
-        'total_quantity',
         'ordred_quantity',
         'available_quantity'
     ] ;

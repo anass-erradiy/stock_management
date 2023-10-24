@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
-
+// users
 Route::controller(UserController::class)
     ->group(function () {
         Route::post('/login', 'login')->name('users.login');
@@ -28,11 +28,14 @@ Route::controller(UserController::class)
         Route::get('/logout','logout')->name('users.logout')->middleware('auth:sanctum') ;
     });
 Route::apiResource("users",UserController::class)->middleware("auth:sanctum");
+
+// products
+Route::controller(ProductController::class)
+->group(function () {
+        Route::get('/products/trashed', 'trashedProducts')->middleware('auth:sanctum')->name('products');
+        Route::get('/products/trashed/{id}', 'trashedProducts')->middleware('auth:sanctum')->name('products');
+        Route::delete('/products/deleteTrashedProduct/{id}', 'deleteTrashedProduct')->middleware('auth:sanctum')->name('products');
+        Route::delete('/products/deleteTrashedProducts', 'deleteTrashedProducts')->middleware('auth:sanctum')->name('products');
+    });
 Route::apiResource("products",ProductController::class)->middleware("auth:sanctum");
-// Route::controller(ProductController::class)
-//     ->group(function () {
-//         Route::get('/products', 'productsList')->middleware('auth:sanctum')->name('products');
-//         Route::post('/products/create', 'createProduct')->middleware('auth:sanctum','role:seller|admin')->name('products.create');
-//         Route::post('/product/edit/{id}', 'edit')->middleware('auth:sanctum','checkRole:seller')->name('products.edit');
-//         Route::post('/product/update/{id}', 'update')->middleware('auth:sanctum','checkRole:seller')->name('products.update');
-// });
+
