@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
@@ -38,4 +39,7 @@ Route::controller(ProductController::class)
         Route::delete('/products/deleteTrashedProducts', 'deleteTrashedProducts')->middleware('auth:sanctum')->name('products');
     });
 Route::apiResource("products",ProductController::class)->middleware("auth:sanctum");
+
+// oreders
+Route::apiResource('orders',OrderController::class)->middleware('auth:sanctum') ;
 

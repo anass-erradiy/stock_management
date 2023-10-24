@@ -21,4 +21,8 @@ class Product extends Model
     public function stock(){
         return $this->hasOne(Stock::class) ;
     }
+
+    public function order(){
+        return $this->belongsTo(Order::class ,'orders_products')->withPivot(['qte']) ;
+    }
 }
