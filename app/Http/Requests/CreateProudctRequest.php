@@ -30,17 +30,17 @@ class CreateProudctRequest extends FormRequest
         $method = $this->method() ;
         return [
             'product_name' => [
-                Rule::requiredIf($method == 'PUT' && $userId),
+                Rule::requiredIf($userId),
                 'string'
             ] ,
             'quantity' => [
-                Rule::requiredIf($method == 'PUT' && $userId) ,
+                Rule::requiredIf($userId) ,
                 'min:1',
                 'integer'
                 ] ,
             'description' => 'string' ,
             'price' => [
-                Rule::requiredIf($method == 'PUT' && $userId)
+                Rule::requiredIf($userId)
                 ,'numeric'
                 ]
         ];
