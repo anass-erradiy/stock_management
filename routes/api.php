@@ -33,10 +33,10 @@ Route::apiResource("users",UserController::class)->middleware("auth:sanctum");
 // products
 Route::controller(ProductController::class)
 ->group(function () {
-        Route::get('/products/trashed', 'trashedProducts')->middleware('auth:sanctum')->name('products');
-        Route::get('/products/trashed/{id}', 'trashedProducts')->middleware('auth:sanctum')->name('products');
-        Route::delete('/products/deleteTrashedProduct/{id}', 'deleteTrashedProduct')->middleware('auth:sanctum')->name('products');
-        Route::delete('/products/deleteTrashedProducts', 'deleteTrashedProducts')->middleware('auth:sanctum')->name('products');
+        Route::get('/products/trashed', 'trashedProducts')->middleware('auth:sanctum')->name('products.trashedProducts');
+        Route::get('/products/trashed/{id}', 'trashedProduct')->middleware('auth:sanctum')->name('products.trashedProduct');
+        Route::delete('/products/deleteTrashedProduct/{id}', 'deleteTrashedProduct')->middleware('auth:sanctum')->name('products.deleteTrashedProduct');
+        Route::delete('/products/deleteTrashedProducts', 'deleteTrashedProducts')->middleware('auth:sanctum')->name('products.deleteTrashedProducts');
     });
 Route::apiResource("products",ProductController::class)->middleware("auth:sanctum");
 

@@ -23,7 +23,6 @@ class OrderController extends Controller
         $orders = $this->productsInOrder() ;
         return response()->json(['orders' => $orders ]) ;
     }
-    // return Order::where('user_id',Auth::user()->id)->with('products')->get() ;
     public function store(Request $request){
         $order_owner = User::findOrFail($request->get('user'));
         foreach($request->products as $product){
@@ -40,6 +39,13 @@ class OrderController extends Controller
             ]) ;
         return response()->json([
             'message' => 'order submited !'
+        ]) ;
+    }
+    // get ordeers for the buyer
+    public function buyerOrders(){
+        $orders = Order::where('user_id',Auth::user()->id)->with('products')->get() ;
+        return response()->json([
+            'orders' => $orders
         ]) ;
     }
     // get an order with it's id for seller
@@ -73,7 +79,7 @@ class OrderController extends Controller
         }
         if($order->order_status != 'sent')
             return response()->json([
-                'error' => 'You can not modify this product !'
+                'error' => 'You can not modify this order !'
             ]);
         switch ($request->action) {
             case "add":
@@ -81,34 +87,29 @@ class OrderController extends Controller
                     return response()->json([
                         'message' => 'Product aleady ordred !'
                     ]) ;
-                $order->products()->attach($request->products) ;
-                if(!$this->updateProductQuantity($request->products))
-                    return response()->json([
-                        'error' => 'something went wrong !'
-                    ]) ;
+                if(!$this->attachProductsToOrder($request,$order))
                 return response()->json([
-                    'message' => 'some products added to the order successfully !'
+                    'error' => 'somethng went wrong ,Try again !'
+                ]) ;
+                return response()->json([
+                    'message' => 'order updated with success ,some proudct(s) added to the order'
                 ]) ;
             case "delete":
-                if(!$this->checkIfProductalreadyOrdred($request->products,$order))
+                if(!$this->dettachProductsFromOrder($request,$order))
                     return response()->json([
-                        'error' => 'the provided product not exists in your order'
+                        'error' => 'some of your products can not be deleted from the order !'
                     ]) ;
-                foreach($request->products as $product){
-                    $order->products()->detach($product['product_id']) ;
-                }
                 return response()->json([
-                    'message' => 'products deleted from order with success !'
+                    'message' => 'product(s) deleted from the order with success !'
                 ]) ;
             case "replace":
                 $order->products()->detach() ;
-                $order->products()->attach($request->products) ;
-                if(!$this->updateProductQuantity($request->products))
+                if(!$this->attachProductsToOrder($request,$order))
                     return response()->json([
-                        'error' => 'something went wrong !'
-                    ]) ;
+                        'error' => 'somethng went wrong ,Try again !'
+                ]) ;
                 return response()->json([
-                    'message' => 'products replaced !'
+                    'message' => 'order updated with success ,products replaced '
                 ]) ;
             }
     }
@@ -162,6 +163,7 @@ class OrderController extends Controller
             'trashedOrders' => 'trashed order deleted with success !'
         ]) ;
     }
+    // update the order status -> seller side
     public function sellerStatus($id,Request $request){
         if(count($this->productsInOrder())<1)
             return response()->json([
@@ -175,7 +177,7 @@ class OrderController extends Controller
         ]) ;
     }
 
-    
+
     // Helper functions
     private function checkProductAvailability($product){
         $productToFind = Product::find($product['product_id']) ;
@@ -200,15 +202,6 @@ class OrderController extends Controller
             return false ;
         return true ;
     }
-    private function deleteFromPivot($orderId,$rowId){
-        Order::find($orderId)->products()->detach($rowId) ;
-    }
-    private function addToOrder(){
-        return ;
-    }
-    private function replaceOrder(){
-        return ;
-    }
     private function checkIfProductalreadyOrdred($products,$order){
         foreach($products as $product){
             if($order->products()->find($product['product_id'])) {
@@ -223,5 +216,19 @@ class OrderController extends Controller
             $q->whereIn('products.id',$seller_products) ;
         })->get() ;
         return $orders ;
+    }
+    private function attachProductsToOrder($request,$order){
+        $order->products()->attach($request->products) ;
+        if(!$this->updateProductQuantity($request->products))
+            return false ;
+        return true ;
+    }
+    private function dettachProductsFromOrder($request,$order){
+        if(!$this->checkIfProductalreadyOrdred($request->products,$order))
+            return false ;
+        foreach($request->products as $product){
+            $order->products()->detach($product['product_id']) ;
+        }
+        return true ;
     }
 }

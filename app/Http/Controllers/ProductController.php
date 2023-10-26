@@ -14,7 +14,8 @@ class ProductController extends Controller
 
     public function __construct()
     {
-        $this->middleware('role:admin')->only('trashedProducts') ;
+        $this->middleware('role:admin')->only(['trashedProducts','trashedProduct','deleteTrashedProduct','deleteTrashedProducts']) ;
+        $this->middleware('role:admin|seller')->only('store') ;
     }
     public function index(){
         $products = Product::all() ;
@@ -41,8 +42,8 @@ class ProductController extends Controller
             'product' => $product
             ]) ;
     }
-
     public function update(CreateProudctRequest $request,Product $product){
+        // check if the seller has the updated product
         if(!in_array($product->id,Auth::user()->products->pluck('id')->toArray()) && !Auth::user()->hasRole('admin'))
             return response()->json([
                 'error' => 'You do not have permession to do this action !'
@@ -57,6 +58,7 @@ class ProductController extends Controller
         ]) ;
     }
     public function destroy(Product $product){
+        // check if the seller has the product to delete
         if(!in_array($product->id,Auth::user()->products->pluck('id')->toArray()) && !Auth::user()->hasRole('admin'))
             return response()->json([
                 'error' => 'You do not have permession to do this action !'
