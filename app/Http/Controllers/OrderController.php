@@ -177,7 +177,6 @@ class OrderController extends Controller
         ]) ;
     }
 
-
     // Helper functions
     private function checkProductAvailability($product){
         $productToFind = Product::find($product['product_id']) ;
